@@ -530,6 +530,7 @@
   const auth = firebase.auth();
   const secondaryAuth = secondaryApp.auth();
   const db = firebase.firestore();
+  db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); // ayuda en redes/antivirus que bloquean la conexión normal de Firestore
 
   async function ensureAnonAuth(){
     if(!auth.currentUser){
