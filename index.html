@@ -8,13 +8,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#1C2B4A; --navy-ink:#141F35; --gold:#A9792C; --gold-light:#C79A44;
-    --green:#2F5233; --paper:#ECE5D3; --paper-card:#FBF8F1; --line:#c9bc9c;
-    --red:#8C2F2F; --text:#241C10; --muted:#6b6250; --radius:2px;
+    --navy:#1B3B2C; --navy-ink:#0F2A1E; --gold:#4C8C52; --gold-light:#6FAF6E;
+    --green:#2F5233; --paper:#EDF1E6; --paper-card:#FAFBF6; --line:#bccbb0;
+    --red:#8C2F2F; --text:#20261F; --muted:#5f6b58; --radius:2px;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
-  body{background:var(--paper);background-image:repeating-linear-gradient(0deg, rgba(28,43,74,0.02) 0px, rgba(28,43,74,0.02) 1px, transparent 1px, transparent 3px);color:var(--text);font-family:'IBM Plex Sans', sans-serif;line-height:1.5;min-height:100vh;}
+  body{background:var(--paper);background-image:repeating-linear-gradient(0deg, rgba(27,59,44,0.03) 0px, rgba(27,59,44,0.03) 1px, transparent 1px, transparent 3px);color:var(--text);font-family:'IBM Plex Sans', sans-serif;line-height:1.5;min-height:100vh;position:relative;}
+  #bgWatermark{position:fixed;inset:0;background-repeat:no-repeat;background-position:center 30vh;background-size:min(60vw,480px);pointer-events:none;z-index:0;opacity:0;}
+  header,nav.tabs,main,footer,.admin-fab,.modal-overlay,.save-toast{position:relative;z-index:1;}
   h1,h2,h3,.serif{font-family:'Lora', serif;}
   a{color:var(--navy);}
   button{font-family:inherit;cursor:pointer;}
@@ -26,7 +28,7 @@
   .letterhead-inner{display:flex;align-items:center;gap:22px;padding:26px 20px 22px;}
   .seal{width:64px;height:64px;border-radius:50%;border:2px solid var(--gold-light);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;background:#152040;font-family:'Lora',serif;font-weight:600;font-size:22px;color:var(--gold-light);}
   .seal img{width:100%;height:100%;object-fit:cover;}
-  .institution-name{font-size:1.7rem;font-weight:700;letter-spacing:.2px;margin:0;line-height:1.15;}
+  .institution-name{font-size:2.15rem;font-weight:700;letter-spacing:.2px;margin:0;line-height:1.15;}
   .institution-lema{font-size:.92rem;color:#C9BE9E;margin-top:4px;font-style:italic;}
   .letterhead-edit{margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
 
@@ -122,10 +124,26 @@
   .roster-toplinks button{background:none;border:none;color:var(--navy);text-decoration:underline;padding:0;font-weight:600;}
 
   .admin-fab{position:fixed;bottom:18px;right:18px;z-index:50;display:flex;align-items:center;gap:8px;}
-  .admin-pill{background:var(--navy);color:#fff;border:1px solid var(--gold);padding:9px 15px;border-radius:30px;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(0,0,0,.25);}
-  .admin-pill.active{background:var(--green);border-color:#7fae86;}
-  .dot{width:8px;height:8px;border-radius:50%;background:#8fa0c4;}
-  .admin-pill.active .dot{background:#bfe6c4;}
+  .admin-pill{background:#fff;color:var(--navy);border:1px solid var(--line);padding:10px 18px;border-radius:8px;font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 6px 18px rgba(15,42,30,.16);transition:box-shadow .15s, transform .15s;}
+  .admin-pill:hover{box-shadow:0 8px 22px rgba(15,42,30,.22);transform:translateY(-1px);}
+  .admin-pill.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .dot{width:8px;height:8px;border-radius:50%;background:#b7c3ae;}
+  .admin-pill.active .dot{background:var(--gold-light);}
+
+  /* ===== Mensajes de guardado uniformes ===== */
+  .save-toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-14px);z-index:200;
+    background:#fff;border:1px solid var(--line);border-left:5px solid var(--gold);color:var(--text);
+    padding:10px 18px;border-radius:4px;font-size:.86rem;font-weight:600;box-shadow:0 8px 24px rgba(15,42,30,.2);
+    opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;max-width:88vw;}
+  .save-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .save-toast.err{border-left-color:var(--red);}
+
+  /* ===== Barra de "Guardar cambios" general del Máster ===== */
+  .master-savebar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--navy);color:#fff;
+    display:none;align-items:center;justify-content:center;gap:16px;padding:12px 16px;box-shadow:0 -6px 18px rgba(0,0,0,.2);}
+  .master-savebar.show{display:flex;}
+  .master-savebar span{font-size:.85rem;}
+  .master-savebar button.btn{padding:8px 18px;}
 
   .modal-overlay{position:fixed;inset:0;background:rgba(20,25,40,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
   .modal-overlay.show{display:flex;}
@@ -157,7 +175,7 @@
   @media (max-width:640px){
     .letterhead-inner{flex-wrap:wrap;}
     .letterhead-edit{margin-left:0;align-items:flex-start;width:100%;}
-    .institution-name{font-size:1.35rem;}
+    .institution-name{font-size:1.55rem;}
   }
 
   /* ===== Cuadro de horarios ===== */
@@ -183,6 +201,9 @@
 </head>
 <body>
 
+<div id="bgWatermark"></div>
+<div class="save-toast" id="saveToast"></div>
+
 <header class="letterhead">
   <div class="wrap letterhead-inner">
     <div class="seal" id="sealBox">🏛</div>
@@ -193,6 +214,7 @@
     <div class="letterhead-edit hidden" id="letterheadEdit">
       <button class="btn small outline" id="btnEditLogo" style="background:#fff;">Cambiar escudo/logo</button>
       <button class="btn small outline" id="btnEditHero" style="background:#fff;">Cambiar imagen de portada</button>
+      <button class="btn small outline" id="btnEditTema" style="background:#fff;">Colores / marca de agua</button>
     </div>
   </div>
 </header>
@@ -250,10 +272,20 @@
 
       <h3 class="sub">Bloques horarios</h3>
       <div class="chip-list" id="bloquesChips"></div>
-      <div class="chip-add">
-        <input type="text" id="nuevoBloque" placeholder="Ej: 7:40 - 8:30">
-        <button class="btn small gold" id="btnAddBloque">Agregar bloque</button>
+      <div class="form-grid" style="grid-template-columns:2fr 1fr;align-items:end;">
+        <div><label style="display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px;font-weight:600;">Horario del bloque</label><input type="text" id="nuevoBloque" placeholder="Ej: 7:40 - 8:30"></div>
+        <div><label style="display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px;font-weight:600;">Tipo</label>
+          <select id="nuevoBloqueTipo">
+            <option value="clase">Clase (materia)</option>
+            <option value="descanso">Descanso</option>
+            <option value="almuerzo">Almuerzo</option>
+            <option value="reunion">Reunión</option>
+            <option value="actividad">Actividad institucional</option>
+            <option value="libre">Libre</option>
+          </select>
+        </div>
       </div>
+      <button class="btn small gold" id="btnAddBloque" style="margin-top:8px;">Agregar bloque</button>
     </div>
 
     <div class="card">
@@ -275,11 +307,17 @@
           <div><label>Día</label><select id="hDia"><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option></select></div>
           <div><label>Bloque horario</label><select id="hBloque"></select></div>
           <div><label>Curso</label><select id="hCurso"></select></div>
-          <div><label>Materia</label><select id="hMateria"></select></div>
-          <div id="hDocenteMasterWrap"><label>Docente</label><select id="hDocente"></select></div>
+          <div id="hDocenteMasterWrap"><label>Profesor</label><select id="hDocente"></select></div>
+          <div><label>Materia que dicta</label><select id="hMateria"></select></div>
         </div>
+        <div class="err" id="horarioErr"></div>
         <button class="btn gold" id="btnAddHorario">Agregar al horario</button>
       </div>
+    </div>
+
+    <div class="card hidden" id="horarioProfesorPanel">
+      <div class="toolbar"><h2><span>Mi horario personal</span></h2></div>
+      <div style="overflow-x:auto;"><div id="horarioProfesorGrid"></div></div>
     </div>
   </section>
 
@@ -320,11 +358,13 @@
   <section class="view" id="view-asistencias">
     <div class="card hidden" id="rosterMgmtPanel">
       <h2>Lista de estudiantes por curso</h2>
-      <p class="perm-note">Pega la lista completa del curso (un nombre por línea) en vez de agregarlos uno por uno.</p>
+      <p class="perm-note">Pega la lista completa del curso (un nombre por línea) o impórtala desde un archivo Excel/CSV, en vez de agregar estudiantes uno por uno. Puedes dejar campos vacíos; no se pide información confidencial.</p>
       <div class="form-grid" style="grid-template-columns:1fr;"><div><label>Curso</label><select id="rosterCurso"></select></div></div>
       <textarea id="rosterTexto" rows="6" style="width:100%;" placeholder="Juan Pérez&#10;María López&#10;Carlos Gómez"></textarea>
-      <div style="text-align:left;margin-top:10px;display:flex;gap:10px;align-items:center;">
+      <div style="text-align:left;margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <button class="btn gold small" id="btnGuardarRoster">Guardar lista del curso</button>
+        <label class="btn outline small" style="margin:0;" for="rosterFile">Importar Excel/CSV</label>
+        <input type="file" id="rosterFile" accept=".csv,.txt,.xlsx" class="hidden">
         <span class="perm-note" id="rosterCount" style="margin:0;"></span>
       </div>
     </div>
@@ -335,7 +375,7 @@
         <div><label>Curso</label><select id="asistCurso"></select></div>
         <div><label>Fecha</label><input type="date" id="asistFecha"></div>
       </div>
-      <button class="btn outline small" id="btnCargarLista">Cargar lista de este curso</button>
+      <p class="perm-note" style="margin:0 0 8px;">La lista aparece automáticamente al elegir curso y fecha.</p>
       <div class="roster-toplinks" id="rosterToplinks" style="display:none;">
         <button id="marcarTodosPresentes">Marcar todos presentes</button>
         <button id="marcarTodosAusentes">Marcar todos ausentes</button>
@@ -369,6 +409,7 @@
     <div class="card hidden" id="fotosPendingPanel">
       <div class="pending-box">
         <h3>Solicitudes pendientes de aprobación</h3>
+        <p class="perm-note" style="margin-top:-4px;">Aún no se envían correos automáticos; revisa aquí las solicitudes pendientes periódicamente.</p>
         <div id="pendingList"></div>
         <div class="empty" id="emptyPending" style="display:none;margin:0;">No hay solicitudes pendientes.</div>
       </div>
@@ -418,6 +459,7 @@
         </table>
       </div>
       <p class="perm-note">La contraseña la define el propio profesor al recibir el correo de "restablecer contraseña"; por seguridad, nadie (ni el administrador) puede verla en texto plano.</p>
+      <p class="perm-note">Las materias y cursos de cada profesor ya no se configuran aquí: se definen al crear el horario (curso → profesor → materia que dicta).</p>
       <div class="inline-add">
         <h3 class="sub" style="margin-top:0;border-top:none;padding-top:0;">Agregar profesor</h3>
         <div class="form-grid">
@@ -425,10 +467,6 @@
           <div><label>Correo</label><input type="email" id="pEmail" placeholder="ej: ana.rodriguez@correo.com"></div>
           <div><label>Contraseña inicial</label><input type="password" id="pPassword" placeholder="Mínimo 6 caracteres"></div>
         </div>
-        <label style="display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px;font-weight:600;">Materias que dicta</label>
-        <div class="check-grid" id="pMateriasCheck"></div>
-        <label style="display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px;font-weight:600;">Cursos donde dicta</label>
-        <div class="check-grid" id="pCursosCheck"></div>
         <button class="btn gold" id="btnAddProfesor">Agregar profesor</button>
       </div>
     </div>
@@ -453,10 +491,16 @@
 
 </main>
 
-<footer>Portal institucional · el contenido de este sitio es administrado por el personal autorizado</footer>
+<footer class="editable-field" id="footerText" contenteditable="false">Portal institucional · el contenido de este sitio es administrado por el personal autorizado</footer>
 
 <div class="admin-fab">
   <div class="admin-pill" id="adminPill" role="button" tabindex="0"><span class="dot"></span><span id="adminPillText">Visitante</span></div>
+</div>
+
+<div class="master-savebar" id="masterSavebar">
+  <span>Tienes cambios de configuración sin guardar.</span>
+  <button class="btn gold" id="btnGuardarConfigGeneral">Guardar cambios</button>
+  <button class="btn outline" id="btnDescartarConfigGeneral" style="background:transparent;color:#fff;border-color:#fff;">Descartar</button>
 </div>
 
 <div class="modal-overlay" id="loginModal">
@@ -497,6 +541,25 @@
     <div class="err" id="setupErr"></div>
     <div class="row"><button class="btn" id="setupSubmit" style="flex:1;">Crear administrador</button></div>
     <button type="button" class="link-btn" id="setupYaTengo" style="margin-top:12px;">Ya creé esta cuenta antes, iniciar sesión</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="temaModal">
+  <div class="modal">
+    <h3>Colores y marca de agua</h3>
+    <p class="hint">Elige un tono de verde para el tema y, si quieres, muestra el escudo como marca de agua de fondo.</p>
+    <div class="field">
+      <label>Tono del tema</label>
+      <div class="chip-list" id="temaSwatches"></div>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="temaWatermarkOn" style="width:auto;"> Mostrar el escudo institucional como marca de agua de fondo</label>
+    </div>
+    <div class="field" id="temaWatermarkOpacityWrap">
+      <label>Transparencia de la marca de agua</label>
+      <input type="range" id="temaWatermarkOpacity" min="2" max="20" value="6" style="width:100%;">
+    </div>
+    <div class="row"><button class="btn outline" id="temaCancel">Cancelar</button><button class="btn" id="temaSubmit">Guardar</button></div>
   </div>
 </div>
 
@@ -555,11 +618,37 @@
     heroText:"Aquí la comunidad educativa puede consultar horarios, notas, asistencia y el registro fotográfico de nuestras actividades.",
     aviso:"Recuerda revisar periódicamente esta página para conocer novedades sobre horarios y actividades institucionales.",
     historiaTitulo:"Historia de la institución",
-    historiaTexto:"Fundada por la comunidad para ofrecer educación pública de calidad, la institución ha crecido a lo largo de los años gracias al compromiso de estudiantes, docentes y familias." };
+    historiaTexto:"Fundada por la comunidad para ofrecer educación pública de calidad, la institución ha crecido a lo largo de los años gracias al compromiso de estudiantes, docentes y familias.",
+    footerText:"Portal institucional · el contenido de este sitio es administrado por el personal autorizado",
+    tema:"verde-institucional", watermarkOn:false, watermarkOpacity:6 };
+
+  const TEMAS = {
+    'verde-institucional': { navy:'#1B3B2C', navyInk:'#0F2A1E', gold:'#4C8C52', goldLight:'#6FAF6E' },
+    'verde-bosque':        { navy:'#173B29', navyInk:'#0C2318', gold:'#3E7A46', goldLight:'#5B9C61' },
+    'verde-oliva':         { navy:'#33402A', navyInk:'#20291A', gold:'#7A8C4C', goldLight:'#9AAE6C' },
+    'verde-menta':         { navy:'#204438', navyInk:'#122A22', gold:'#4FA688', goldLight:'#7BC4AB' }
+  };
 
   let cursos = ["6°A","6°B","7°A","7°B","8°A","8°B","9°A","9°B","10°A","10°B","11°A","11°B"];
   let materias = ["Matemáticas","Español","Ciencias Naturales","Sociales","Inglés","Educación Física","Artística","Tecnología e Informática","Ética y Valores","Filosofía"];
-  let bloques = ["6:00 - 6:50","6:50 - 7:40","7:40 - 8:30","8:30 - 8:50 (Descanso)","8:50 - 9:40","9:40 - 10:30","10:30 - 11:20","11:20 - 12:10","12:10 - 1:00"];
+  const TIPOS_BLOQUE = { clase:'Clase', descanso:'Descanso', almuerzo:'Almuerzo', reunion:'Reunión', actividad:'Actividad institucional', libre:'Libre' };
+  let bloques = [
+    {id:'b1', label:"6:00 - 6:50", tipo:'clase'}, {id:'b2', label:"6:50 - 7:40", tipo:'clase'},
+    {id:'b3', label:"7:40 - 8:30", tipo:'clase'}, {id:'b4', label:"8:30 - 8:50", tipo:'descanso'},
+    {id:'b5', label:"8:50 - 9:40", tipo:'clase'}, {id:'b6', label:"9:40 - 10:30", tipo:'clase'},
+    {id:'b7', label:"10:30 - 11:20", tipo:'clase'}, {id:'b8', label:"11:20 - 12:10", tipo:'clase'},
+    {id:'b9', label:"12:10 - 1:00", tipo:'clase'}
+  ];
+  function migrarBloques(arr){
+    // compatibilidad: versiones anteriores guardaban los bloques como texto plano
+    if(!Array.isArray(arr)) return null;
+    return arr.map((b,i)=>{
+      if(typeof b === 'object' && b && b.label) return b;
+      const texto = (b||'').toString();
+      const esDescanso = /descanso/i.test(texto);
+      return { id: uid()+i, label: texto.replace(/\s*\(descanso\)\s*/i,'').trim(), tipo: esDescanso ? 'descanso' : 'clase' };
+    });
+  }
 
   let horarios = [];
   let notas = [];
