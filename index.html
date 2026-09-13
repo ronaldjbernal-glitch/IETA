@@ -184,6 +184,9 @@
   #saveToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--navy-ink);color:#fff;padding:10px 20px;border-radius:30px;font-size:.85rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:9999;}
   #saveToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   #saveToast.err{background:var(--red);}
+  #btnGuardarTodo{position:fixed;right:20px;bottom:24px;background:var(--gold);color:#fff;border:none;padding:13px 20px;border-radius:30px;font-weight:700;font-size:.88rem;box-shadow:0 6px 18px rgba(0,0,0,.28);z-index:900;}
+  #btnGuardarTodo:hover{background:var(--gold-light);}
+  @media (max-width:640px){ #btnGuardarTodo{right:12px;bottom:16px;padding:11px 16px;font-size:.8rem;} }
 </style>
 </head>
 <body>
@@ -286,7 +289,7 @@
           <div><label>Día</label><select id="hDia"><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option></select></div>
           <div><label>Bloque horario</label><select id="hBloque"></select></div>
           <div><label>Curso</label><select id="hCurso"></select></div>
-          <div><label>Materia</label><select id="hMateria"></select></div>
+          <div id="hMateriaWrap"><label>Materia</label><select id="hMateria"></select></div>
           <div id="hDocenteMasterWrap"><label>Docente</label><select id="hDocente"></select></div>
         </div>
         <button class="btn gold" id="btnAddHorario">Agregar al horario</button>
@@ -316,13 +319,15 @@
       <div class="inline-add hidden" id="notaAddBox">
         <p class="perm-note" id="notaScopeNote"></p>
         <div class="form-grid">
-          <div><label>Estudiante</label><input type="text" id="nEst" placeholder="Nombre completo"></div>
           <div><label>Curso</label><select id="nCurso"></select></div>
-          <div><label>Materia</label><select id="nMateria"></select></div>
+          <div id="nMateriaWrap"><label>Materia</label><select id="nMateria"></select></div>
           <div><label>Periodo</label><input type="text" id="nPeriodo" placeholder="Ej: Periodo 3"></div>
-          <div><label>Nota</label><input type="number" step="0.1" min="0" max="10" id="nNota" placeholder="0 - 10"></div>
         </div>
-        <button class="btn gold" id="btnAddNota">Agregar nota</button>
+        <button class="btn gold" id="btnCargarListaNotas">Cargar lista del curso</button>
+        <div class="roster-toplinks" id="notaToplinks" style="display:none;">
+          <button type="button" id="btnGuardarNotas">Guardar todas las notas</button>
+        </div>
+        <div class="roster-box" id="notaRosterBox" style="display:none;"></div>
       </div>
     </div>
   </section>
@@ -727,6 +732,12 @@
     $('toggleVistaProfesorWrap').classList.toggle('hidden', !isProfesor());
     fillSelect($('hCurso'), isProfesor()? profesorCursos() : cursos, false);
     fillSelect($('hMateria'), isProfesor()? profesorMaterias() : materias, false);
+    if(isProfesor() && profesorMaterias().length===1){
+      $('hMateriaWrap').classList.add('hidden');
+      $('hMateria').value = profesorMaterias()[0];
+    } else {
+      $('hMateriaWrap').classList.remove('hidden');
+    }
     fillSelect($('hDocente'), usuarios.profesores.map(p=>p.nombre), false);
     $('hDocenteMasterWrap').style.display = isMaster() ? 'flex' : 'none';
   }
@@ -816,6 +827,12 @@
     else { $('filtroCursoNotasLabel').classList.remove('hidden'); $('filtroCursoNotas').classList.remove('hidden'); fillSelect($('filtroCursoNotas'), cs, true, 'Todos los cursos'); }
     fillSelect($('nCurso'), isProfesor()? profesorCursos() : cursos, false);
     fillSelect($('nMateria'), isProfesor()? profesorMaterias() : materias, false);
+    if(isProfesor() && profesorMaterias().length===1){
+      $('nMateriaWrap').classList.add('hidden');
+      $('nMateria').value = profesorMaterias()[0];
+    } else {
+      $('nMateriaWrap').classList.remove('hidden');
+    }
   }
   function renderNotas(){
     const cs = scopeCursosVisibles();
@@ -876,7 +893,8 @@
   $('btnGuardarRoster').addEventListener('click', async ()=>{
     const curso = $('rosterCurso').value; if(!puedeGestionarCurso(curso)) return;
     roster[curso] = $('rosterTexto').value.split('\n').map(s=>s.trim()).filter(Boolean);
-    await safeSet('roster', roster); updateRosterCount();
+    const ok = await safeSet('roster', roster); updateRosterCount();
+    mostrarGuardado(ok, 'Lista de estudiantes guardada ✓');
   });
 
   let checklistData = [];
@@ -908,7 +926,7 @@
     if(!puedeGestionarCurso(curso)) return;
     asistencias = asistencias.filter(r=> !(r.curso===curso && r.fecha===fecha));
     checklistData.forEach(s=> asistencias.push({ id:uid(), estudiante:s.nombre, curso, fecha, estado: s.presente?'presente':'ausente' }));
-    await safeSet('asistencias', asistencias); renderAsist();
+    await safeSet('asistencias', asistencias).then(ok=> mostrarGuardado(ok, 'Asistencia guardada ✓')); renderAsist();
     $('btnGuardarAsistencia').textContent='Guardado ✓'; setTimeout(()=>$('btnGuardarAsistencia').textContent='Guardar asistencia del día',1500);
   });
   $('tblAsist').addEventListener('click', async (e)=>{ const btn=e.target.closest('[data-del-asist]'); if(!btn) return;
@@ -1143,6 +1161,7 @@
   function applyRoleUI(){
     // letterhead / config editing: solo master
     document.body.classList.toggle('master-on', isMaster());
+    $('btnGuardarTodo').classList.toggle('hidden', !isMaster());
     $('letterheadEdit').classList.toggle('hidden', !isMaster());
     ['instName','instLema','heroTitle','heroText','avisoText','historiaTitulo','historiaTexto','footerText'].forEach(id=> $(id).setAttribute('contenteditable', isMaster() ? 'true':'false'));
 
@@ -1324,6 +1343,21 @@
     saveToastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
   }
 
+  async function guardarTodo(){
+    const resultados = await Promise.all([
+      safeSet('config', config), safeSet('cursos', cursos), safeSet('materias', materias), safeSet('bloques', bloques),
+      safeSet('horarios', horarios), safeSet('notas', notas), safeSet('asistencias', asistencias),
+      safeSet('roster', roster), safeSet('usuarios', usuarios), safeSet('fotos-index', fotosIndex)
+    ]);
+    return resultados.every(Boolean);
+  }
+  $('btnGuardarTodo').addEventListener('click', async ()=>{
+    $('btnGuardarTodo').disabled = true;
+    const ok = await guardarTodo();
+    mostrarGuardado(ok, 'Todos los cambios quedaron guardados ✓', 'Algo no se pudo guardar, revisa tu conexión e inténtalo de nuevo');
+    $('btnGuardarTodo').disabled = false;
+  });
+
   function bindEditable(id, field){
     $(id).addEventListener('blur', async ()=>{ if(!isMaster()) return; config[field] = $(id).textContent.trim(); const ok = await safeSet('config', config); mostrarGuardado(ok); });
   }
@@ -1353,12 +1387,12 @@
   });
 
   /* ================= cursos / materias / bloques CRUD ================= */
-  $('btnAddCurso').addEventListener('click', async ()=>{ const v=$('nuevoCurso').value.trim(); if(!v||cursos.includes(v)) return; cursos.push(v); await safeSet('cursos',cursos); $('nuevoCurso').value=''; renderAll(); });
-  $('cursosChips').addEventListener('click', async (e)=>{ const btn=e.target.closest('[data-del-curso]'); if(!btn) return; cursos=cursos.filter(c=>c!==btn.dataset.delCurso); await safeSet('cursos',cursos); renderAll(); });
-  $('btnAddMateria').addEventListener('click', async ()=>{ const v=$('nuevaMateria').value.trim(); if(!v||materias.includes(v)) return; materias.push(v); await safeSet('materias',materias); $('nuevaMateria').value=''; renderAll(); });
-  $('materiasChips').addEventListener('click', async (e)=>{ const btn=e.target.closest('[data-del-materia]'); if(!btn) return; materias=materias.filter(m=>m!==btn.dataset.delMateria); await safeSet('materias',materias); renderAll(); });
-  $('btnAddBloque').addEventListener('click', async ()=>{ const v=$('nuevoBloque').value.trim(); if(!v||bloques.includes(v)) return; bloques.push(v); await safeSet('bloques',bloques); $('nuevoBloque').value=''; renderAll(); });
-  $('bloquesChips').addEventListener('click', async (e)=>{ const btn=e.target.closest('[data-del-bloque]'); if(!btn) return; bloques=bloques.filter(b=>b!==btn.dataset.delBloque); await safeSet('bloques',bloques); renderAll(); });
+  $('btnAddCurso').addEventListener('click', async ()=>{ const v=$('nuevoCurso').value.trim(); if(!v||cursos.includes(v)) return; cursos.push(v); const ok=await safeSet('cursos',cursos); $('nuevoCurso').value=''; renderAll(); mostrarGuardado(ok); });
+  $('cursosChips').addEventListener('click', async (e)=>{ const btn=e.target.closest('[data-del-curso]'); if(!btn) return; cursos=cursos.filter(c=>c!==btn.dataset.delCurso); const ok=await safeSet('cursos',cursos); renderAll(); mostrarGuardado(ok); });
+  $('btnAddMateria').addEventListener('click', async ()=>{ const v=$('nuevaMateria').value.trim(); if(!v||materias.includes(v)) return; materias.push(v); const ok=await safeSet('materias',materias); $('nuevaMateria').value=''; renderAll(); mostrarGuardado(ok); });
+  $('materiasChips').addEventListener('click', async (e)=>{ const btn=e.target.closest('[data-del-materia]'); if(!btn) return; materias=materias.filter(m=>m!==btn.dataset.delMateria); const ok=await safeSet('materias',materias); renderAll(); mostrarGuardado(ok); });
+  $('btnAddBloque').addEventListener('click', async ()=>{ const v=$('nuevoBloque').value.trim(); if(!v||bloques.includes(v)) return; bloques.push(v); const ok=await safeSet('bloques',bloques); $('nuevoBloque').value=''; renderAll(); mostrarGuardado(ok); });
+  $('bloquesChips').addEventListener('click', async (e)=>{ const btn=e.target.closest('[data-del-bloque]'); if(!btn) return; bloques=bloques.filter(b=>b!==btn.dataset.delBloque); const ok=await safeSet('bloques',bloques); renderAll(); mostrarGuardado(ok); });
 
   /* ================= horarios CRUD ================= */
   $('btnAddHorario').addEventListener('click', async ()=>{
@@ -1405,13 +1439,36 @@
   });
 
   /* ================= notas CRUD ================= */
-  $('btnAddNota').addEventListener('click', async ()=>{
-    const estudiante=$('nEst').value.trim(), curso=$('nCurso').value, materia=$('nMateria').value, periodo=$('nPeriodo').value.trim(), nota=$('nNota').value;
-    if(!estudiante||!materia||nota==='') return;
+  let notaChecklistData = [];
+  $('btnCargarListaNotas').addEventListener('click', ()=>{
+    const curso=$('nCurso').value, materia=$('nMateria').value, periodo=$('nPeriodo').value.trim();
+    if(!curso||!materia){ alert('Selecciona curso y materia primero.'); return; }
+    if(!periodo){ alert('Escribe el periodo (ej: Periodo 3) primero.'); return; }
     if(isProfesor() && !(profesorCursos().includes(curso) && profesorMaterias().includes(materia))) return;
-    notas.push({id:uid(), estudiante,curso,materia,periodo,nota});
-    await safeSet('notas', notas);
-    $('nEst').value=''; $('nPeriodo').value=''; $('nNota').value=''; renderNotas();
+    const nombres = roster[curso]||[];
+    if(!nombres.length){ alert('Este curso no tiene lista de estudiantes todavía. Agrégala en Asistencias → Gestionar lista de estudiantes.'); return; }
+    const existentes = {};
+    notas.filter(r=> r.curso===curso && r.materia===materia && r.periodo===periodo).forEach(r=> existentes[r.estudiante]=r.nota);
+    notaChecklistData = nombres.map(n=>({ nombre:n, nota: existentes[n]!==undefined ? existentes[n] : '' }));
+    renderNotaChecklist();
+    $('notaRosterBox').style.display='block'; $('notaToplinks').style.display='flex';
+  });
+  function renderNotaChecklist(){
+    const box = $('notaRosterBox'); box.innerHTML='';
+    notaChecklistData.forEach((s,i)=>{
+      const row = document.createElement('div'); row.className='roster-check';
+      row.innerHTML = `<span class="name">${escapeHtml(s.nombre)}</span><input type="number" step="0.1" min="0" max="10" data-idx="${i}" value="${escapeAttr(s.nota)}" placeholder="0-10" style="width:76px;">`;
+      box.appendChild(row);
+    });
+  }
+  $('notaRosterBox').addEventListener('input', (e)=>{ const inp=e.target.closest('input'); if(!inp) return; notaChecklistData[+inp.dataset.idx].nota = inp.value; });
+  $('btnGuardarNotas').addEventListener('click', async ()=>{
+    const curso=$('nCurso').value, materia=$('nMateria').value, periodo=$('nPeriodo').value.trim();
+    if(isProfesor() && !(profesorCursos().includes(curso) && profesorMaterias().includes(materia))) return;
+    notas = notas.filter(r=> !(r.curso===curso && r.materia===materia && r.periodo===periodo));
+    notaChecklistData.forEach(s=>{ if(s.nota!=='' && s.nota!=null) notas.push({id:uid(), estudiante:s.nombre, curso, materia, periodo, nota:s.nota}); });
+    const ok = await safeSet('notas', notas); renderNotas();
+    mostrarGuardado(ok, 'Notas guardadas ✓');
   });
   $('tblNotas').addEventListener('click', async (e)=>{
     const btn = e.target.closest('[data-del-nota]'); if(!btn) return;
@@ -1425,6 +1482,7 @@
   loadAll();
 })();
 </script>
+<button type="button" id="btnGuardarTodo" class="hidden">💾 Guardar todos los cambios</button>
 <div id="saveToast"></div>
 </body>
 </html>
