@@ -264,6 +264,12 @@
     <div class="card">
       <div class="toolbar">
         <h2><span>Horarios</span><span class="n" id="countHorarios">0</span></h2>
+        <div class="filters hidden" id="toggleVistaProfesorWrap">
+          <div class="role-tabs" id="toggleVistaProfesor" style="margin:0;min-width:220px;">
+            <button type="button" class="role-tab active" data-vista-horario="propio">Mi horario</button>
+            <button type="button" class="role-tab" data-vista-horario="curso">Por curso</button>
+          </div>
+        </div>
         <div class="filters" id="filtroHorarioWrap">
           <label>Consultar curso:</label>
           <select id="filtroCursoHorario"></select>
@@ -718,16 +724,52 @@
     const wrap = $('filtroHorarioWrap');
     if(isEstudiante()){ wrap.classList.add('hidden'); }
     else { wrap.classList.remove('hidden'); fillSelect($('filtroCursoHorario'), cs, true, 'Todos los cursos'); }
+    $('toggleVistaProfesorWrap').classList.toggle('hidden', !isProfesor());
     fillSelect($('hCurso'), isProfesor()? profesorCursos() : cursos, false);
     fillSelect($('hMateria'), isProfesor()? profesorMaterias() : materias, false);
     fillSelect($('hDocente'), usuarios.profesores.map(p=>p.nombre), false);
     $('hDocenteMasterWrap').style.display = isMaster() ? 'flex' : 'none';
   }
+  let vistaHorarioProfesor = 'propio';
   function renderHorarios(){
     const cs = scopeCursosVisibles();
-    let cursoActivo = isEstudiante() ? estudianteCurso() : $('filtroCursoHorario').value;
-    if(!isEstudiante() && !cursoActivo && cs.length){ cursoActivo = cs[0]; $('filtroCursoHorario').value = cursoActivo; }
     const wrap = $('horarioGridWrap');
+    const diasSemana = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+
+    if(isProfesor() && vistaHorarioProfesor==='propio'){
+      $('filtroHorarioWrap').classList.add('hidden');
+      const misEntradas = horarios.filter(r=> r.docente.trim().toLowerCase()===(currentUser.nombre||'').trim().toLowerCase());
+      let html = '<table class="grid-horario"><thead><tr><th>Bloque</th>';
+      diasSemana.forEach(d=>{ html += `<th>${escapeHtml(d)}</th>`; });
+      html += '</tr></thead><tbody>';
+      bloques.forEach(bloque=>{
+        const esDescanso = bloque.toLowerCase().includes('descanso');
+        html += `<tr><td class="bloque-label">${escapeHtml(bloque)}</td>`;
+        if(esDescanso){
+          html += `<td class="descanso-cell" colspan="${diasSemana.length}">Descanso</td>`;
+        } else {
+          diasSemana.forEach(dia=>{
+            const entrada = misEntradas.find(r=> r.dia===dia && r.bloque===bloque);
+            if(entrada){
+              html += `<td class="celda-horario ocupada"><div class="mat">${escapeHtml(entrada.curso)}</div><div class="doc">${escapeHtml(entrada.materia)}</div><button class="icon-btn danger celda-del" data-del-horario="${entrada.id}" title="Eliminar">✕</button></td>`;
+            } else {
+              html += `<td class="celda-horario vacia"><span class="doc" style="opacity:.5;">Libre</span></td>`;
+            }
+          });
+        }
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+      wrap.dataset.curso = '';
+      $('countHorarios').textContent = misEntradas.length;
+      $('emptyHorarios').style.display = 'none';
+      return;
+    }
+
+    let cursoActivo = isEstudiante() ? estudianteCurso() : $('filtroCursoHorario').value;
+    if(!isEstudiante()) $('filtroHorarioWrap').classList.remove('hidden');
+    if(!isEstudiante() && !cursoActivo && cs.length){ cursoActivo = cs[0]; $('filtroCursoHorario').value = cursoActivo; }
     if(!cursoActivo){
       wrap.innerHTML = '';
       $('countHorarios').textContent = '0';
@@ -736,7 +778,6 @@
       return;
     }
     const puedeEditarCurso = isMaster() || (isProfesor() && profesorCursos().includes(cursoActivo));
-    const diasSemana = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
     const entradasCurso = horarios.filter(r=> r.curso===cursoActivo);
 
     let html = '<table class="grid-horario"><thead><tr><th>Bloque</th>';
@@ -1325,8 +1366,15 @@
     const docente = isProfesor() ? currentUser.nombre : $('hDocente').value;
     if(!bloque||!curso||!materia||!docente) return;
     if(isProfesor() && !(profesorCursos().includes(curso) && profesorMaterias().includes(materia))) return;
+    const chocaOtroCurso = horarios.some(r => r.dia===dia && r.bloque===bloque && r.curso!==curso &&
+      r.docente.trim().toLowerCase() === docente.trim().toLowerCase());
+    if(chocaOtroCurso){
+      alert(`${docente} ya tiene una clase asignada el ${dia} en el bloque "${bloque}" en otro curso. No se puede asignar dos cursos a la misma hora.`);
+      return;
+    }
     horarios.push({id:uid(), dia,bloque,curso,materia,docente});
-    await safeSet('horarios', horarios); renderHorarios();
+    const ok = await safeSet('horarios', horarios); renderHorarios();
+    mostrarGuardado(ok, 'Clase agregada al horario ✓');
   });
   $('horarioGridWrap').addEventListener('click', async (e)=>{
     const delBtn = e.target.closest('[data-del-horario]');
@@ -1349,6 +1397,12 @@
     }
   });
   $('filtroCursoHorario').addEventListener('change', renderHorarios);
+  $('toggleVistaProfesor').addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-vista-horario]'); if(!btn) return;
+    vistaHorarioProfesor = btn.dataset.vistaHorario;
+    document.querySelectorAll('#toggleVistaProfesor .role-tab').forEach(b=> b.classList.toggle('active', b===btn));
+    renderHorarios();
+  });
 
   /* ================= notas CRUD ================= */
   $('btnAddNota').addEventListener('click', async ()=>{
