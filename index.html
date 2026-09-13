@@ -1213,13 +1213,13 @@
       const cred = await signInWithEmailAndPassword(auth, email, pass);
       const perfilSnap = await getDoc(doc(db, 'perfiles', cred.user.uid));
       if(!perfilSnap.exists()){
-        if(loginRoleSelected==='master' && (!usuarios.masters || !usuarios.masters.length)){
+        if(loginRoleSelected==='master'){
           // Reparación: la cuenta de Firebase Authentication ya existía (de un intento anterior)
-          // pero el perfil en Firestore nunca se guardó. La completamos ahora.
+          // pero el perfil en Firestore nunca se guardó (o quedó un registro obsoleto). La completamos ahora.
           const perfilNuevo = { rol:'master', nombre:'', email };
           await setDoc(doc(db, 'perfiles', cred.user.uid), perfilNuevo);
           if(!usuarios.masters) usuarios.masters = [];
-          usuarios.masters.push({ uid: cred.user.uid, email });
+          if(!usuarios.masters.some(m=>m.uid===cred.user.uid)) usuarios.masters.push({ uid: cred.user.uid, email });
           await safeSet('usuarios', usuarios);
           currentRole = 'master'; currentUser = Object.assign({ uid: cred.user.uid, email }, perfilNuevo);
           $('loginModal').classList.remove('show'); renderAll();
