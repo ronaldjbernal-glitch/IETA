@@ -109,8 +109,8 @@
 
   .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px;}
   .photo{background:#fff;border:1px solid var(--line);padding:8px 8px 12px;box-shadow:0 3px 6px rgba(28,43,74,.12);transform:rotate(var(--r,0deg));}
-  .photo img{width:100%;height:150px;object-fit:cover;display:block;background:#eee;}
-  .photo .cap{font-size:.82rem;margin-top:8px;color:var(--text);text-align:center;}
+  .photo img{width:100%;height:150px;object-fit:cover;display:block;background:#eee;cursor:pointer;}
+  .photo .cap{font-size:1rem;font-weight:600;margin-top:8px;color:var(--text);text-align:center;}
   .photo .meta{font-size:.72rem;color:var(--muted);text-align:center;margin-top:2px;}
   .photo .actions{display:flex;gap:6px;justify-content:center;margin-top:8px;}
 
@@ -181,6 +181,10 @@
   .role-tabs .role-tab:last-child{border-right:none;}
   .role-tabs .role-tab.active{background:var(--navy);color:#fff;}
   .link-btn{border:none;background:none;color:var(--navy);text-decoration:underline;font-size:.82rem;padding:0;font-weight:600;}
+  .evento-row{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);}
+  .evento-row .fecha{background:var(--navy);color:#fff;border-radius:2px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;text-align:center;min-width:64px;flex-shrink:0;}
+  .evento-row .titulo{font-weight:700;color:var(--navy);font-family:'Lora',serif;font-size:1.05rem;}
+  .evento-row .desc{font-size:.86rem;color:var(--muted);margin-top:2px;}
   #saveToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--navy-ink);color:#fff;padding:10px 20px;border-radius:30px;font-size:.85rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:9999;}
   #saveToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   #saveToast.err{background:var(--red);}
@@ -212,6 +216,7 @@
   <button data-view="notas">Notas</button>
   <button data-view="asistencias">Asistencias</button>
   <button data-view="fotos">Fotos</button>
+  <button data-view="eventos">Eventos</button>
   <button data-view="usuarios">Usuarios</button>
 </nav>
 
@@ -310,7 +315,7 @@
       </div>
       <div style="overflow-x:auto;">
         <table>
-          <thead><tr><th>Estudiante</th><th>Curso</th><th>Materia</th><th>Periodo</th><th>Nota</th><th id="thNotaAcc"></th></tr></thead>
+          <thead><tr><th>Estudiante</th><th>Curso</th><th>Materia</th><th>Periodo</th><th>Notas</th><th>Promedio</th><th id="thNotaAcc"></th></tr></thead>
           <tbody id="tblNotas"></tbody>
         </table>
       </div>
@@ -318,10 +323,16 @@
 
       <div class="inline-add hidden" id="notaAddBox">
         <p class="perm-note" id="notaScopeNote"></p>
+        <p class="hint">Escala de 1 a 5 · 3.0 o más aprueba (verde) · menos de 3.0 pierde (rojo). Puedes escribir varias notas del periodo separadas por coma (ej: 4.5, 3.0, 5) y se promedian solas.</p>
         <div class="form-grid">
           <div><label>Curso</label><select id="nCurso"></select></div>
           <div id="nMateriaWrap"><label>Materia</label><select id="nMateria"></select></div>
-          <div><label>Periodo</label><input type="text" id="nPeriodo" placeholder="Ej: Periodo 3"></div>
+          <div><label>Periodo</label><select id="nPeriodo">
+            <option value="Periodo 1">Periodo 1</option>
+            <option value="Periodo 2">Periodo 2</option>
+            <option value="Periodo 3">Periodo 3</option>
+            <option value="Periodo 4">Periodo 4</option>
+          </select></div>
         </div>
         <button class="btn gold" id="btnCargarListaNotas">Cargar lista del curso</button>
         <div class="roster-toplinks" id="notaToplinks" style="display:none;">
@@ -412,6 +423,25 @@
     </div>
   </section>
 
+  <!-- EVENTOS -->
+  <section class="view" id="view-eventos">
+    <div class="card">
+      <div class="toolbar"><h2><span>Eventos y agenda</span><span class="n" id="countEventos">0</span></h2></div>
+      <div id="listaEventos"></div>
+      <div class="empty" id="emptyEventos" style="display:none;">No hay eventos programados todavía.</div>
+
+      <div class="inline-add hidden" id="eventoAddBox">
+        <h3 class="sub" style="margin-top:0;border-top:none;padding-top:0;">Agregar evento</h3>
+        <div class="form-grid">
+          <div><label>Título</label><input type="text" id="evTitulo" placeholder="Ej: Izada de bandera"></div>
+          <div><label>Fecha</label><input type="date" id="evFecha"></div>
+          <div><label>Descripción</label><input type="text" id="evDescripcion" placeholder="Detalles del evento (opcional)"></div>
+        </div>
+        <button class="btn gold" id="btnAddEvento">Agregar evento</button>
+      </div>
+    </div>
+  </section>
+
   <!-- USUARIOS (solo master) -->
   <section class="view" id="view-usuarios">
     <div class="card">
@@ -446,6 +476,15 @@
         <label style="display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px;font-weight:600;">Cursos donde dicta</label>
         <div class="check-grid" id="pCursosCheck"></div>
         <button class="btn gold" id="btnAddProfesor">Agregar profesor</button>
+      </div>
+      <div class="inline-add">
+        <h3 class="sub" style="margin-top:0;border-top:none;padding-top:0;">Crear profesores de prueba (para hacer pruebas)</h3>
+        <p class="hint">Escribe tu correo real de Gmail (el que revisas). Vamos a crear 3 cuentas de profesor de prueba usando variantes de tu mismo correo (ej: tucorreo+profesorprueba1@gmail.com) — todas te llegan a la misma bandeja de entrada, y funcionan como cuentas reales para iniciar sesión.</p>
+        <div class="form-grid">
+          <div><label>Tu correo de Gmail</label><input type="email" id="emailBasePrueba" placeholder="tucorreo@gmail.com"></div>
+        </div>
+        <button class="btn outline" id="btnCrearProfesoresPrueba">Crear 3 profesores de prueba</button>
+        <span class="perm-note" id="pruebaStatus" style="margin-left:10px;"></span>
       </div>
     </div>
 
@@ -624,6 +663,7 @@
   let asistencias = [];
   let roster = {};
   let fotosIndex = [];
+  let eventos = [];
   let usuarios = { estudiantes:{}, profesores:[], masters:[] };
 
   async function safeGet(key){
@@ -696,9 +736,9 @@
 
   async function loadAll(){
     await restoreSession();
-    const [c,cu,mat,bl,h,n,a,r,fi,us,seeded] = await Promise.all([
+    const [c,cu,mat,bl,h,n,a,r,fi,us,ev,seeded] = await Promise.all([
       safeGet('config'), safeGet('cursos'), safeGet('materias'), safeGet('bloques'), safeGet('horarios'),
-      safeGet('notas'), safeGet('asistencias'), safeGet('roster'), safeGet('fotos-index'), safeGet('usuarios'), safeGet('seeded-v1')
+      safeGet('notas'), safeGet('asistencias'), safeGet('roster'), safeGet('fotos-index'), safeGet('usuarios'), safeGet('eventos'), safeGet('seeded-v1')
     ]);
     if(c) config = Object.assign(config, c);
     if(cu && cu.length) cursos = cu;
@@ -709,6 +749,7 @@
     asistencias = a || [];
     roster = r || {};
     fotosIndex = fi || [];
+    eventos = ev || [];
     usuarios = us || { estudiantes:{}, profesores:[], masters:[] };
     if(!usuarios.profesores) usuarios.profesores = [];
     if(!usuarios.masters) usuarios.masters = [];
@@ -770,6 +811,7 @@
     if(isEstudiante()){ wrap.classList.add('hidden'); }
     else { wrap.classList.remove('hidden'); fillSelect($('filtroCursoHorario'), cs, true, 'Todos los cursos'); }
     $('toggleVistaProfesorWrap').classList.toggle('hidden', !isProfesor());
+    fillSelect($('hBloque'), bloques.filter(b=>!b.toLowerCase().includes('descanso')), false);
     fillSelect($('hCurso'), isProfesor()? profesorCursos() : cursos, false);
     fillSelect($('hMateria'), isProfesor()? profesorMaterias() : materias, false);
     if(isProfesor() && profesorMaterias().length===1){
@@ -885,7 +927,18 @@
     filtered.forEach(r=>{
       const tr = document.createElement('tr');
       const puede = puedeEditarNota(r);
-      tr.innerHTML = `<td>${escapeHtml(r.estudiante)}</td><td>${escapeHtml(r.curso)}</td><td>${escapeHtml(r.materia)}</td><td>${escapeHtml(r.periodo)}</td><td><strong>${escapeHtml(r.nota)}</strong></td>
+      const prom = r.promedio!=null ? r.promedio : promedioDe(r.notas||[r.nota]);
+      const colorProm = prom!=null && prom>=3 ? 'var(--green)' : 'var(--red)';
+      let extraAnual = '';
+      if(r.periodo==='Periodo 4'){
+        const delAño = notas.filter(x=> x.estudiante===r.estudiante && x.curso===r.curso && x.materia===r.materia);
+        const proms = delAño.map(x=> x.promedio!=null? x.promedio : promedioDe(x.notas||[x.nota])).filter(p=>p!=null);
+        const promAnual = proms.length ? Math.round((proms.reduce((a,b)=>a+b,0)/proms.length)*10)/10 : null;
+        if(promAnual!=null) extraAnual = ` <span style="font-size:.72rem;color:${promAnual>=3?'var(--green)':'var(--red)'};">(Año: ${promAnual})</span>`;
+      }
+      tr.innerHTML = `<td>${escapeHtml(r.estudiante)}</td><td>${escapeHtml(r.curso)}</td><td>${escapeHtml(r.materia)}</td><td>${escapeHtml(r.periodo)}</td>
+        <td>${escapeHtml((r.notas||[r.nota]).join(', '))}</td>
+        <td><strong style="color:${colorProm};">${prom!=null?prom:'-'}</strong>${extraAnual}</td>
         <td class="row-actions" style="display:${showAcc?'table-cell':'none'};">${puede?`<button class="icon-btn danger" data-del-nota="${r.id}" title="Eliminar">✕</button>`:''}</td>`;
       tb.appendChild(tr);
     });
@@ -976,6 +1029,36 @@
   $('filtroFechaAsist').addEventListener('input', renderAsist);
 
   /* ================= FOTOS ================= */
+  function renderEventos(){
+    const box = $('listaEventos'); box.innerHTML='';
+    const ordenados = [...eventos].sort((a,b)=> (a.fecha||'').localeCompare(b.fecha||''));
+    const puedeEditar = isMaster()||isProfesor();
+    ordenados.forEach(ev=>{
+      const row = document.createElement('div'); row.className='evento-row';
+      const fechaFmt = ev.fecha ? new Date(ev.fecha+'T00:00:00').toLocaleDateString('es-CO', {day:'2-digit', month:'short', year:'numeric'}) : '-';
+      row.innerHTML = `<div class="fecha">${fechaFmt}</div>
+        <div style="flex:1;"><div class="titulo">${escapeHtml(ev.titulo)}</div>${ev.descripcion?`<div class="desc">${escapeHtml(ev.descripcion)}</div>`:''}</div>
+        ${puedeEditar?`<button class="icon-btn danger" data-del-evento="${ev.id}" title="Eliminar">✕</button>`:''}`;
+      box.appendChild(row);
+    });
+    $('countEventos').textContent = eventos.length;
+    $('emptyEventos').style.display = eventos.length ? 'none':'block';
+  }
+  $('btnAddEvento').addEventListener('click', async ()=>{
+    const titulo=$('evTitulo').value.trim(), fecha=$('evFecha').value, descripcion=$('evDescripcion').value.trim();
+    if(!titulo||!fecha) return;
+    eventos.push({id:uid(), titulo, fecha, descripcion});
+    const ok = await safeSet('eventos', eventos);
+    $('evTitulo').value=''; $('evFecha').value=''; $('evDescripcion').value='';
+    renderEventos(); mostrarGuardado(ok, 'Evento agregado ✓');
+  });
+  $('listaEventos').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('[data-del-evento]'); if(!btn) return;
+    eventos = eventos.filter(ev=>ev.id!==btn.dataset.delEvento);
+    const ok = await safeSet('eventos', eventos); renderEventos();
+    mostrarGuardado(ok, 'Evento eliminado ✓');
+  });
+
   async function loadFotos(){
     const g = $('galeria'); g.innerHTML='';
     const aprobadas = fotosIndex.filter(f=>f.estado==='aprobada');
@@ -1057,9 +1140,15 @@
     }catch(err){ $('fotoStatus').textContent='No se pudo procesar la imagen.'; }
   });
   $('galeria').addEventListener('click', async (e)=>{
-    const btn = e.target.closest('[data-del-foto]'); if(!btn || !isMaster()) return;
-    fotosIndex = fotosIndex.filter(f=>f.id!==btn.dataset.delFoto);
-    await safeSet('fotos-index', fotosIndex); await loadFotos();
+    const delBtn = e.target.closest('[data-del-foto]');
+    if(delBtn && isMaster()){
+      fotosIndex = fotosIndex.filter(f=>f.id!==delBtn.dataset.delFoto);
+      const ok = await safeSet('fotos-index', fotosIndex); await loadFotos();
+      mostrarGuardado(ok, 'Foto eliminada ✓');
+      return;
+    }
+    const img = e.target.closest('.photo img');
+    if(img){ $('lightboxImg').src = img.src; $('lightboxCap').textContent = img.alt||''; $('lightboxModal').classList.add('show'); }
   });
   $('pendingList').addEventListener('click', async (e)=>{
     const app = e.target.closest('[data-approve-foto]'); const rej = e.target.closest('[data-reject-foto]');
@@ -1067,8 +1156,11 @@
     const id = app ? app.dataset.approveFoto : rej.dataset.rejectFoto;
     const f = fotosIndex.find(x=>x.id===id); if(!f) return;
     f.estado = app ? 'aprobada' : 'rechazada';
-    await safeSet('fotos-index', fotosIndex); await loadFotos();
+    const ok = await safeSet('fotos-index', fotosIndex); await loadFotos();
+    mostrarGuardado(ok, app ? 'Foto aprobada ✓' : 'Foto rechazada');
   });
+  $('lightboxClose').addEventListener('click', ()=> $('lightboxModal').classList.remove('show'));
+  $('lightboxModal').addEventListener('click', (e)=>{ if(e.target.id==='lightboxModal') $('lightboxModal').classList.remove('show'); });
 
   /* ================= USUARIOS (master) ================= */
   function renderUsuariosTab(){
@@ -1120,6 +1212,35 @@
     await safeSet('usuarios', usuarios);
     btn.textContent='Guardado ✓'; setTimeout(()=>btn.textContent='Guardar',1200);
   });
+  $('btnCrearProfesoresPrueba').addEventListener('click', async ()=>{
+    const base = $('emailBasePrueba').value.trim();
+    if(!base || !base.includes('@')){ $('pruebaStatus').textContent = 'Escribe tu correo real de Gmail arriba.'; return; }
+    const [userPart, domain] = base.split('@');
+    const set = [
+      { nombre:'Profesor de Prueba 1', materias:[materias[0]].filter(Boolean), cursos:[cursos[0], cursos[1]].filter(Boolean) },
+      { nombre:'Profesor de Prueba 2', materias:[materias[1]||materias[0]].filter(Boolean), cursos:[cursos[2]||cursos[0], cursos[3]||cursos[1]].filter(Boolean) },
+      { nombre:'Profesor de Prueba 3', materias:[materias[2]||materias[0]].filter(Boolean), cursos:[cursos[4]||cursos[0]].filter(Boolean) },
+    ];
+    $('btnCrearProfesoresPrueba').disabled = true;
+    $('pruebaStatus').textContent = 'Creando cuentas de prueba...';
+    let creados = 0;
+    for(let i=0;i<set.length;i++){
+      const email = `${userPart}+profesorprueba${i+1}@${domain}`;
+      try{
+        const cred = await createUserWithEmailAndPassword(secondaryAuth, email, 'prueba123456');
+        const uidNuevo = cred.user.uid;
+        await signOut(secondaryAuth);
+        await setDoc(doc(db, 'perfiles', uidNuevo), { rol:'profesor', nombre:set[i].nombre, email, materias:set[i].materias, cursos:set[i].cursos });
+        usuarios.profesores.push({ uid:uidNuevo, nombre:set[i].nombre, email, materias:set[i].materias, cursos:set[i].cursos });
+        creados++;
+      }catch(err){ console.error('No se pudo crear profesor de prueba', email, err); }
+    }
+    await safeSet('usuarios', usuarios);
+    renderUsuariosTab();
+    $('btnCrearProfesoresPrueba').disabled = false;
+    $('pruebaStatus').textContent = creados ? `Se crearon ${creados} profesores de prueba. Contraseña para todos: prueba123456` : 'No se pudo crear ninguno (revisa la consola).';
+  });
+
   $('btnAddProfesor').addEventListener('click', async ()=>{
     const nombre = $('pNombre').value.trim(); const email = $('pEmail').value.trim(); const password = $('pPassword').value;
     const mats = [...document.querySelectorAll('#pMateriasCheck input:checked')].map(i=>i.value);
@@ -1194,6 +1315,7 @@
     refreshNotasFilters(); renderNotas();
     refreshAsistFilters(); renderAsist();
     updateRosterCount();
+    renderEventos();
     if(isMaster()) renderUsuariosTab();
     applyRoleUI();
     reiniciarInactividad();
@@ -1213,6 +1335,7 @@
       notas: currentRole!=='visitante',
       asistencias:true,
       fotos: true,
+      eventos: true,
       usuarios: isMaster()
     };
     document.querySelectorAll('#tabs button[data-view]').forEach(btn=>{
@@ -1238,6 +1361,7 @@
     $('tomarAsistPanel').classList.toggle('hidden', !(isMaster()||isProfesor()));
 
     $('fotoAddBox').classList.toggle('hidden', currentRole==='visitante');
+    $('eventoAddBox').classList.toggle('hidden', !(isMaster()||isProfesor()));
     $('fotoAddTitle').textContent = isEstudiante() ? 'Solicitar agregar foto' : 'Agregar foto';
     $('btnAddFoto').textContent = isEstudiante() ? 'Enviar solicitud' : 'Agregar foto';
 
@@ -1248,12 +1372,32 @@
   }
 
   /* ================= TABS ================= */
-  document.getElementById('tabs').addEventListener('click', (e)=>{
+  async function refrescarDatos(){
+    const [c,cu,mat,bl,h,n,a,r,fi,us,ev] = await Promise.all([
+      safeGet('config'), safeGet('cursos'), safeGet('materias'), safeGet('bloques'), safeGet('horarios'),
+      safeGet('notas'), safeGet('asistencias'), safeGet('roster'), safeGet('fotos-index'), safeGet('usuarios'), safeGet('eventos')
+    ]);
+    if(c) config = Object.assign(config, c);
+    if(cu && cu.length) cursos = cu;
+    if(mat && mat.length) materias = mat;
+    if(bl && bl.length) bloques = bl;
+    if(h) horarios = h;
+    if(n) notas = n;
+    if(a) asistencias = a;
+    if(r) roster = r;
+    if(fi) fotosIndex = fi;
+    if(ev) eventos = ev;
+    if(us){ usuarios = us; if(!usuarios.profesores) usuarios.profesores=[]; if(!usuarios.masters) usuarios.masters=[]; }
+    renderAll();
+    await loadFotos();
+  }
+  document.getElementById('tabs').addEventListener('click', async (e)=>{
     const btn = e.target.closest('button[data-view]'); if(!btn || btn.classList.contains('hidden')) return;
     document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     document.querySelectorAll('section.view').forEach(s=>s.classList.remove('active'));
     document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    await refrescarDatos();
   });
 
   /* ================= LOGIN ================= */
@@ -1389,7 +1533,7 @@
     const resultados = await Promise.all([
       safeSet('config', config), safeSet('cursos', cursos), safeSet('materias', materias), safeSet('bloques', bloques),
       safeSet('horarios', horarios), safeSet('notas', notas), safeSet('asistencias', asistencias),
-      safeSet('roster', roster), safeSet('usuarios', usuarios), safeSet('fotos-index', fotosIndex)
+      safeSet('roster', roster), safeSet('usuarios', usuarios), safeSet('fotos-index', fotosIndex), safeSet('eventos', eventos)
     ]);
     return resultados.every(Boolean);
   }
@@ -1482,16 +1626,20 @@
 
   /* ================= notas CRUD ================= */
   let notaChecklistData = [];
+  function promedioDe(lista){
+    const nums = lista.map(Number).filter(n=>!isNaN(n));
+    if(!nums.length) return null;
+    return Math.round((nums.reduce((a,b)=>a+b,0)/nums.length)*10)/10;
+  }
   $('btnCargarListaNotas').addEventListener('click', ()=>{
-    const curso=$('nCurso').value, materia=$('nMateria').value, periodo=$('nPeriodo').value.trim();
+    const curso=$('nCurso').value, materia=$('nMateria').value, periodo=$('nPeriodo').value;
     if(!curso||!materia){ alert('Selecciona curso y materia primero.'); return; }
-    if(!periodo){ alert('Escribe el periodo (ej: Periodo 3) primero.'); return; }
     if(isProfesor() && !(profesorCursos().includes(curso) && profesorMaterias().includes(materia))) return;
     const nombres = roster[curso]||[];
     if(!nombres.length){ alert('Este curso no tiene lista de estudiantes todavía. Agrégala en Asistencias → Gestionar lista de estudiantes.'); return; }
     const existentes = {};
-    notas.filter(r=> r.curso===curso && r.materia===materia && r.periodo===periodo).forEach(r=> existentes[r.estudiante]=r.nota);
-    notaChecklistData = nombres.map(n=>({ nombre:n, nota: existentes[n]!==undefined ? existentes[n] : '' }));
+    notas.filter(r=> r.curso===curso && r.materia===materia && r.periodo===periodo).forEach(r=> existentes[r.estudiante]=(r.notas||[]).join(', '));
+    notaChecklistData = nombres.map(n=>({ nombre:n, notasTexto: existentes[n]!==undefined ? existentes[n] : '' }));
     renderNotaChecklist();
     $('notaRosterBox').style.display='block'; $('notaToplinks').style.display='flex';
   });
@@ -1499,16 +1647,26 @@
     const box = $('notaRosterBox'); box.innerHTML='';
     notaChecklistData.forEach((s,i)=>{
       const row = document.createElement('div'); row.className='roster-check';
-      row.innerHTML = `<span class="name">${escapeHtml(s.nombre)}</span><input type="number" step="0.1" min="0" max="10" data-idx="${i}" value="${escapeAttr(s.nota)}" placeholder="0-10" style="width:76px;">`;
+      const prom = promedioDe((s.notasTexto||'').split(','));
+      row.innerHTML = `<span class="name">${escapeHtml(s.nombre)}</span><input type="text" data-idx="${i}" value="${escapeAttr(s.notasTexto)}" placeholder="4.5, 3.0, 5" style="width:130px;"><span style="font-weight:700;margin-left:8px;color:${prom!==null && prom>=3?'var(--green)':'var(--red)'};">${prom!==null?prom:''}</span>`;
       box.appendChild(row);
     });
   }
-  $('notaRosterBox').addEventListener('input', (e)=>{ const inp=e.target.closest('input'); if(!inp) return; notaChecklistData[+inp.dataset.idx].nota = inp.value; });
+  $('notaRosterBox').addEventListener('input', (e)=>{
+    const inp=e.target.closest('input'); if(!inp) return;
+    notaChecklistData[+inp.dataset.idx].notasTexto = inp.value;
+    const prom = promedioDe(inp.value.split(','));
+    const promSpan = inp.nextElementSibling;
+    if(promSpan){ promSpan.textContent = prom!==null ? prom : ''; promSpan.style.color = prom!==null && prom>=3 ? 'var(--green)' : 'var(--red)'; }
+  });
   $('btnGuardarNotas').addEventListener('click', async ()=>{
-    const curso=$('nCurso').value, materia=$('nMateria').value, periodo=$('nPeriodo').value.trim();
+    const curso=$('nCurso').value, materia=$('nMateria').value, periodo=$('nPeriodo').value;
     if(isProfesor() && !(profesorCursos().includes(curso) && profesorMaterias().includes(materia))) return;
     notas = notas.filter(r=> !(r.curso===curso && r.materia===materia && r.periodo===periodo));
-    notaChecklistData.forEach(s=>{ if(s.nota!=='' && s.nota!=null) notas.push({id:uid(), estudiante:s.nombre, curso, materia, periodo, nota:s.nota}); });
+    notaChecklistData.forEach(s=>{
+      const lista = (s.notasTexto||'').split(',').map(x=>x.trim()).filter(Boolean).map(Number).filter(n=>!isNaN(n));
+      if(lista.length) notas.push({id:uid(), estudiante:s.nombre, curso, materia, periodo, notas:lista, promedio: promedioDe(lista)});
+    });
     const ok = await safeSet('notas', notas); renderNotas();
     mostrarGuardado(ok, 'Notas guardadas ✓');
   });
@@ -1524,6 +1682,14 @@
   loadAll();
 })();
 </script>
+<div class="modal-overlay" id="lightboxModal">
+  <div class="modal" style="max-width:640px;text-align:center;">
+    <button type="button" class="link-btn" id="lightboxClose" style="float:right;font-size:1.3rem;line-height:1;">✕</button>
+    <img id="lightboxImg" src="" alt="" style="width:100%;border-radius:2px;margin-top:8px;">
+    <p id="lightboxCap" style="font-family:'Lora',serif;font-size:1.5rem;font-weight:700;color:var(--navy);margin:16px 0 4px;"></p>
+  </div>
+</div>
+
 <button type="button" id="btnGuardarTodo" class="hidden">💾 Guardar todos los cambios</button>
 <div id="saveToast"></div>
 </body>
