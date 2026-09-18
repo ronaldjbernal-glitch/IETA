@@ -39,7 +39,7 @@
   .letterhead-inner{max-width:1080px;margin:0 auto;padding:22px 20px;display:flex;align-items:center;gap:18px;}
   .seal{width:92px;height:92px;border-radius:50%;border:3px solid var(--gold-light);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;background:#152040;font-family:'Lora',serif;font-weight:600;font-size:30px;color:var(--gold-light);}
   .seal img{width:100%;height:100%;object-fit:cover;}
-  .institution-name{font-size:2.05rem;font-weight:700;letter-spacing:.2px;margin:0;line-height:1.15;}
+  .institution-name{font-size:2.05rem;font-weight:700;letter-spacing:.2px;margin:0;line-height:1.15;color:#fff;}
   .institution-lema{font-style:italic;color:var(--gold-light);margin:4px 0 0;font-size:.95rem;}
   .letterhead-edit{margin-left:auto;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
   @media (max-width:640px){
@@ -49,10 +49,18 @@
   }
 
   /* Tabs */
-  nav.tabs{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;overflow-x:auto;white-space:nowrap;}
+  nav.tabs{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;overflow-x:auto;white-space:nowrap;text-align:center;}
   nav.tabs button{background:none;border:none;padding:14px 18px;font-size:.88rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;}
   nav.tabs button.active{color:var(--navy);border-bottom-color:var(--gold);}
   nav.tabs button:hover{color:var(--navy);}
+  .tab-dropdown{position:relative;display:inline-block;}
+  .tab-dropdown > button .chevron{font-size:.7rem;margin-left:3px;}
+  .dropdown-menu{display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid var(--line);box-shadow:0 8px 20px rgba(28,43,74,.18);min-width:200px;z-index:60;flex-direction:column;padding:6px 0;}
+  .tab-dropdown.open .dropdown-menu{display:flex;}
+  @media (hover:hover){ .tab-dropdown:hover .dropdown-menu{display:flex;} }
+  .dropdown-menu button{background:none;border:none;text-align:left;padding:10px 16px;font-size:.86rem;font-weight:500;color:var(--text);cursor:pointer;white-space:normal;border-bottom:none !important;}
+  .dropdown-menu button:hover{background:var(--paper);color:var(--navy);}
+  .dropdown-menu button.active{color:var(--navy);font-weight:700;}
 
   nav.subtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line);}
   nav.subtabs button{background:none;border:none;padding:10px 14px;font-size:.84rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;}
@@ -158,10 +166,26 @@
 
 <nav class="tabs" id="tabs">
   <button data-view="inicio" class="active">Inicio</button>
-  <button data-view="institucion">Institución</button>
+  <div class="tab-dropdown" id="ddInstitucion">
+    <button data-view="institucion">Institución <span class="chevron">▾</span></button>
+    <div class="dropdown-menu">
+      <button data-view="institucion" data-sub="historia" class="active">Historia</button>
+      <button data-view="institucion" data-sub="mision">Misión</button>
+      <button data-view="institucion" data-sub="vision">Visión</button>
+      <button data-view="institucion" data-sub="organigrama">Organigrama</button>
+      <button data-view="institucion" data-sub="derechos">Derechos y Deberes</button>
+      <button data-view="institucion" data-sub="contactos">Contactos</button>
+    </div>
+  </div>
   <button data-view="directiva">Directiva</button>
   <button data-view="fotos">Fotos</button>
-  <button data-view="eventos">Eventos</button>
+  <div class="tab-dropdown" id="ddEventos">
+    <button data-view="eventos">Eventos <span class="chevron">▾</span></button>
+    <div class="dropdown-menu">
+      <button data-view="eventos" data-sub="eventos" class="active">Eventos</button>
+      <button data-view="eventos" data-sub="noticias">Noticias</button>
+    </div>
+  </div>
   <button data-view="egresados">Egresados</button>
   <button data-view="documentos">Documentos</button>
   <button data-view="usuarios">Administración</button>
@@ -184,15 +208,6 @@
 
   <!-- INSTITUCIÓN -->
   <section class="view" id="view-institucion">
-    <nav class="subtabs" id="institucionSubtabs">
-      <button data-sub="historia" class="active">Historia</button>
-      <button data-sub="mision">Misión</button>
-      <button data-sub="vision">Visión</button>
-      <button data-sub="organigrama">Organigrama</button>
-      <button data-sub="derechos">Derechos y Deberes</button>
-      <button data-sub="contactos">Contactos</button>
-    </nav>
-
     <div class="card subview active" id="sub-historia">
       <h2 class="editable-field" id="historiaTitulo" contenteditable="false">Historia de la institución</h2>
       <div class="hidden" id="historiaToolbar" style="margin-bottom:8px;display:flex;gap:6px;">
@@ -312,11 +327,6 @@ Correo: —</p>
 
   <!-- EVENTOS -->
   <section class="view" id="view-eventos">
-    <nav class="subtabs" id="eventosSubtabs">
-      <button data-sub="eventos" class="active">Eventos</button>
-      <button data-sub="noticias">Noticias</button>
-    </nav>
-
     <div class="card subview active" id="sub-eventos">
       <div class="toolbar"><h2><span>Eventos y agenda</span><span class="n" id="countEventos">0</span></h2></div>
       <div id="listaEventos"></div>
@@ -842,6 +852,45 @@ Correo: —</p>
     mostrarGuardado(ok, 'Integrante eliminado ✓');
   });
 
+  /* ================= EGRESADOS ================= */
+  function renderEgresados(){
+    const box = $('gridEgresados'); box.innerHTML='';
+    egresados.forEach(eg=>{
+      const card = document.createElement('div'); card.className='directiva-card';
+      card.innerHTML = `${isMaster()?`<button class="icon-btn danger del" data-del-egresado="${eg.id}" title="Eliminar">✕</button>`:''}
+        ${eg.foto?`<img src="${escapeAttr(eg.foto)}" alt="${escapeAttr(eg.nombre)}" class="foto">`:`<div class="foto" style="display:flex;align-items:center;justify-content:center;font-size:1.8rem;">🎓</div>`}
+        <div class="nombre">${escapeHtml(eg.nombre)}</div>
+        <div class="cargo">${escapeHtml(eg.promocion)}</div>
+        ${eg.mensaje?`<div style="font-size:.8rem;color:var(--text);margin-top:6px;">${escapeHtml(eg.mensaje)}</div>`:''}`;
+      box.appendChild(card);
+    });
+    $('countEgresados').textContent = egresados.length;
+    $('emptyEgresados').style.display = egresados.length? 'none':'block';
+  }
+  $('btnAddEgresado').addEventListener('click', async ()=>{
+    const nombre = $('egNombre').value.trim(), promocion = $('egPromocion').value.trim(), mensaje = $('egMensaje').value.trim();
+    if(!nombre){ mostrarAlerta('Escribe al menos el nombre.'); return; }
+    let foto = null;
+    const file = $('egFoto').files[0];
+    if(file){
+      $('egStatus').textContent = 'Procesando imagen...';
+      try{
+        foto = await resizeImageFile(file, 500, 0.75);
+        if(foto.length > 900000) foto = await resizeImageFile(file, 350, 0.6);
+      }catch(err){ mostrarAlerta('No se pudo procesar la foto.'); return; }
+    }
+    egresados.push({ id:uid(), nombre, promocion, mensaje, foto });
+    const ok = await safeSet('egresados', egresados);
+    $('egNombre').value=''; $('egPromocion').value=''; $('egMensaje').value=''; $('egFoto').value=''; $('egStatus').textContent='';
+    renderEgresados(); mostrarGuardado(ok, 'Egresado agregado ✓');
+  });
+  $('gridEgresados').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('[data-del-egresado]'); if(!btn) return;
+    egresados = egresados.filter(eg=>eg.id!==btn.dataset.delEgresado);
+    const ok = await safeSet('egresados', egresados); renderEgresados();
+    mostrarGuardado(ok, 'Egresado eliminado ✓');
+  });
+
   /* ================= EVENTOS ================= */
   function renderEventos(){
     const box = $('listaEventos'); box.innerHTML='';
@@ -883,13 +932,6 @@ Correo: —</p>
     eventos = eventos.filter(ev=>ev.id!==btn.dataset.delEvento);
     const ok = await safeSet('eventos', eventos); renderEventos();
     mostrarGuardado(ok, 'Evento eliminado ✓');
-  });
-
-  $('eventosSubtabs').addEventListener('click', (e)=>{
-    const btn = e.target.closest('[data-sub]'); if(!btn) return;
-    document.querySelectorAll('#eventosSubtabs button').forEach(b=>b.classList.toggle('active', b===btn));
-    document.querySelectorAll('#view-eventos .subview').forEach(s=>s.classList.remove('active'));
-    $('sub-'+btn.dataset.sub).classList.add('active');
   });
 
   function renderNoticias(){
@@ -1108,13 +1150,6 @@ Correo: —</p>
   bindEditableRico('derechosTexto','derechosTexto','derechosToolbar');
   bindEditableRico('contactosTexto','contactosTexto','contactosToolbar');
 
-  $('institucionSubtabs').addEventListener('click', (e)=>{
-    const btn = e.target.closest('[data-sub]'); if(!btn) return;
-    document.querySelectorAll('#institucionSubtabs button').forEach(b=>b.classList.toggle('active', b===btn));
-    document.querySelectorAll('#view-institucion .subview').forEach(s=>s.classList.remove('active'));
-    $('sub-'+btn.dataset.sub).classList.add('active');
-  });
-
   $('btnEditOrganigrama').addEventListener('click', ()=>{ imgTarget='organigramaImg'; $('imgModalTitle').textContent='Subir imagen del organigrama'; $('imgUrlInput').value=config.organigramaImg||''; $('imgFileInput').value=''; $('imgFileStatus').textContent=''; $('imgModal').classList.add('show'); });
 
   let imgTarget = null;
@@ -1278,11 +1313,35 @@ Correo: —</p>
   /* ================= TABS ================= */
   document.getElementById('tabs').addEventListener('click', async (e)=>{
     const btn = e.target.closest('button[data-view]'); if(!btn || btn.classList.contains('hidden')) return;
-    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
+    const dd = btn.closest('.tab-dropdown');
+
+    // Clic en el botón principal de un menú desplegable (ej: "Institución ▾"): abre/cierra el menú
+    if(dd && !btn.closest('.dropdown-menu')){
+      const yaAbierto = dd.classList.contains('open');
+      document.querySelectorAll('.tab-dropdown').forEach(d=> d.classList.remove('open'));
+      if(!yaAbierto){ dd.classList.add('open'); return; }
+    } else {
+      document.querySelectorAll('.tab-dropdown').forEach(d=> d.classList.remove('open'));
+    }
+
+    document.querySelectorAll('nav.tabs > button, .tab-dropdown > button').forEach(b=>b.classList.remove('active'));
+    (dd ? dd.querySelector(':scope > button') : btn).classList.add('active');
     document.querySelectorAll('section.view').forEach(s=>s.classList.remove('active'));
     document.getElementById('view-'+btn.dataset.view).classList.add('active');
+
+    // Si viene de un ítem del menú desplegable, activa también la sub-sección correspondiente
+    if(btn.dataset.sub){
+      const menu = dd ? dd.querySelector('.dropdown-menu') : null;
+      if(menu) menu.querySelectorAll('button').forEach(b=> b.classList.toggle('active', b===btn));
+      document.querySelectorAll('#view-'+btn.dataset.view+' .subview').forEach(s=>s.classList.remove('active'));
+      const sub = document.getElementById('sub-'+btn.dataset.sub);
+      if(sub) sub.classList.add('active');
+    }
+
     await refrescarDatos();
+  });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.tab-dropdown')) document.querySelectorAll('.tab-dropdown').forEach(d=> d.classList.remove('open'));
   });
 
   $('btnGuardarTodo').addEventListener('click', async ()=>{
