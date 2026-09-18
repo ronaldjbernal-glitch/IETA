@@ -55,7 +55,7 @@
   nav.tabs button:hover{color:var(--navy);}
   .tab-dropdown{position:relative;display:inline-block;}
   .tab-dropdown > button .chevron{font-size:.7rem;margin-left:3px;}
-  .dropdown-menu{display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid var(--line);box-shadow:0 8px 20px rgba(28,43,74,.18);min-width:200px;z-index:60;flex-direction:column;padding:6px 0;}
+  .dropdown-menu{display:none;position:fixed;background:#fff;border:1px solid var(--line);box-shadow:0 8px 20px rgba(28,43,74,.18);min-width:200px;z-index:1000;flex-direction:column;padding:6px 0;}
   .tab-dropdown.open .dropdown-menu{display:flex;}
   @media (hover:hover){ .tab-dropdown:hover .dropdown-menu{display:flex;} }
   .dropdown-menu button{background:none;border:none;text-align:left;padding:10px 16px;font-size:.86rem;font-weight:500;color:var(--text);cursor:pointer;white-space:normal;border-bottom:none !important;}
@@ -1311,6 +1311,17 @@ Correo: —</p>
   });
 
   /* ================= TABS ================= */
+  function posicionarDropdown(dd){
+    const btn = dd.querySelector(':scope > button');
+    const menu = dd.querySelector('.dropdown-menu');
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = rect.bottom + 'px';
+    menu.style.left = rect.left + 'px';
+  }
+  document.querySelectorAll('.tab-dropdown').forEach(dd=>{
+    dd.addEventListener('mouseenter', ()=> posicionarDropdown(dd));
+  });
+
   document.getElementById('tabs').addEventListener('click', async (e)=>{
     const btn = e.target.closest('button[data-view]'); if(!btn || btn.classList.contains('hidden')) return;
     const dd = btn.closest('.tab-dropdown');
@@ -1319,7 +1330,7 @@ Correo: —</p>
     if(dd && !btn.closest('.dropdown-menu')){
       const yaAbierto = dd.classList.contains('open');
       document.querySelectorAll('.tab-dropdown').forEach(d=> d.classList.remove('open'));
-      if(!yaAbierto){ dd.classList.add('open'); return; }
+      if(!yaAbierto){ posicionarDropdown(dd); dd.classList.add('open'); return; }
     } else {
       document.querySelectorAll('.tab-dropdown').forEach(d=> d.classList.remove('open'));
     }
